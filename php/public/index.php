@@ -195,7 +195,7 @@ switch(true){
         httpOk(204);
 
     case $method == 'POST' && $path == '/users':
-        $res = $auth->createUser($_POST['username'], $_POST['password']);
+        $res = $auth->createUser($_POST['username'], $_POST['password'], $_POST['phone']);
         if($res['error']){httpFail(400,$res['data']);}
         httpOk(201, $res['data']);
 

@@ -38,7 +38,7 @@ final class Authentification {
 
     public function login(string $username, string $password): array{
         $user = $this->users_db->getUserByUsername($username);
-        if(!$user){
+        if($user['error']){
             return ['error'=>true,'reason'=>"Username doesn't exist"];
         }
         if(!password_verify($password, hash: (string)$user['data']['hash_password'])){
@@ -56,12 +56,12 @@ final class Authentification {
         return password_verify($password, $hpwd);
     }
 
-    public function createUser(string $username, string $password): array {
+    public function createUser(string $username, string $password, string $phone): array {
         if(strlen($password) < 8){
             return Utils::dbReturn(true, 'password too short');
         }
         $h_pwd = password_hash($password, PASSWORD_BCRYPT);
-        $res = $this->users_db->addUser($username, $h_pwd);
+        $res = $this->users_db->addUser($username, $h_pwd, $phone, $avatar_url ?? 'https://i.pravatar.cc/150?img=4');
         return $res;
     }
 

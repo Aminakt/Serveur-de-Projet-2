@@ -16,7 +16,7 @@ final class Users {
     */
     public function getAll():array{
 
-        $sql = 'SELECT id, username FROM Users';
+        $sql = 'SELECT id, username, phone, avatar_url FROM Users';
         return $this->pdo->query($sql)->fetchAll();
 
     }
@@ -53,12 +53,14 @@ final class Users {
         return $stmt->execute();}catch(\PDOException $e){return false;}
     }
 
-    public function addUser(string $user, string $h_password):array{
+    public function addUser(string $user, string $h_password, string $phone, string $avatar_url):array{
         try{
-            $sql = 'INSERT INTO Users (username, hash_password) VALUES (:user, :h_password)';
+            $sql = 'INSERT INTO Users (username, hash_password, phone, avatar_url) VALUES (:user, :h_password, :phone, :avatar_url)';
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindValue(':user', $user, PDO::PARAM_STR);
             $stmt->bindValue(':h_password', $h_password, PDO::PARAM_STR);
+            $stmt->bindValue(':phone', $phone, PDO::PARAM_STR);
+            $stmt->bindValue(':avatar_url', $avatar_url, PDO::PARAM_STR);
             $stmt->execute();
 
             if($stmt->rowCount() === 0){
