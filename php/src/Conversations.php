@@ -94,18 +94,39 @@ final class Conversations {
 
     public function getConversationsAndLastMessagesFromUserId(int $user_id):array{
         try{
-            $sql = 'SELECT c.id AS conversation_id, c.name AS conversation_name, c.main_user_id, c.recipient_id,
-                m.id AS message_id, m.sender_id, m.conversation_id AS message_conversation_id, m.content AS message_content, m.sent_at AS message_sent_at
+            $sql = 'SELECT
+                c.id  AS conversation_id,
+                c.name AS conversation_name,
+                c.main_user_id,
+                c.recipient_id,
+
+                CASE WHEN c.main_user_id = ? THEN u_rec.id ELSE u_main.id END AS other_user_id,
+                CASE WHEN c.main_user_id = ? THEN u_rec.username ELSE u_main.username END AS other_username,
+                CASE WHEN c.main_user_id = ? THEN u_rec.avatar_url ELSE u_main.avatar_url END AS other_avatar_url,
+                lm.id            AS message_id,
+                lm.sender_id,
+                lm.conversation_id AS message_conversation_id,
+                lm.content       AS message_content,
+                lm.sent_at       AS message_sent_at
+
                 FROM Conversations c
-                LEFT JOIN Messages m ON c.id = m.conversation_id
-                WHERE (c.main_user_id = ? OR c.recipient_id = ?)
-                AND m.sent_at = (
-                    SELECT MAX(sent_at)
+                JOIN Users u_main ON u_main.id = c.main_user_id
+                JOIN Users u_rec  ON u_rec.id  = c.recipient_id
+
+                LEFT JOIN (
+                SELECT m1.*
+                FROM Messages m1
+                JOIN (
+                    SELECT conversation_id, MAX(sent_at) AS max_sent
                     FROM Messages
-                    WHERE conversation_id = c.id
-                )';
+                    GROUP BY conversation_id
+                ) mx ON mx.conversation_id = m1.conversation_id AND mx.max_sent = m1.sent_at
+                ) lm ON lm.conversation_id = c.id
+
+                WHERE c.main_user_id = ? OR c.recipient_id = ?
+                ORDER BY COALESCE(lm.sent_at, c.id) DESC';
             $stmt = $this->pdo->prepare($sql);
-            $stmt->execute([$user_id, $user_id]);
+            $stmt->execute([$user_id, $user_id, $user_id, $user_id, $user_id]);
             return Utils::dbReturn(false, $stmt->fetchAll(PDO::FETCH_ASSOC));
         }catch(\PDOException $e){
             return Utils::dbReturn(true, $e->getMessage());
