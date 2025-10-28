@@ -199,6 +199,14 @@ switch(true){
         if($res['error']){httpFail(400,$res['data']);}
         httpOk(201, $res['data']);
 
+    case $method == 'GET' && preg_match('#^/users/(?P<user_id>\d+)/conversations$#', $path, $m):
+        $user_id = (int)$m['user_id'];
+        $res = $conversations_db->getAllConversationsFromUserId($user_id);
+        if($res['error']){
+            httpFail(400,$res['data']);
+        }
+        httpOk(200, $res['data']);
+
     default:
         http_response_code(404);
         echo json_encode(['error'=> "URI Doesn't exist"]);

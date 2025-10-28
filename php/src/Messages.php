@@ -133,7 +133,7 @@ final class Messages {
             $stmt->bindValue(':conversation_id', $conversation_id, PDO::PARAM_INT);
             $stmt->execute();
             $message = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $message ?: [];
+            return Utils::dbReturn(false, $message ?: null);
         }catch(\PDOException $e){
             return ['Error' => $e];
         }

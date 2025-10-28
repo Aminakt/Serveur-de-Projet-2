@@ -82,12 +82,13 @@ final class Conversations {
     }
 
     public function getAllConversationsFromUserId(int $user_id):array{
-        $sql = 'SELECT *
-            FROM conversations
-            WHERE main_user_id = :user_id OR recipient_id = :user_id';
+        try{$sql = 'SELECT *
+            FROM Conversations
+            WHERE main_user_id = ? OR recipient_id = ?';
         $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt->execute([$user_id, $user_id]);
+        return Utils::dbReturn(false, $stmt->fetchAll(PDO::FETCH_ASSOC));}catch(\PDOException $e){
+            return Utils::dbReturn(true, $e->getMessage());
+        }
     }
 }
