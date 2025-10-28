@@ -118,7 +118,24 @@ final class Messages {
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }catch(\PDOException $e){
-            return ['Error :3'];
+            return ['Error' => $e];
+        }
+    }
+
+    public function getLastMessageFromConversationId(int $conversation_id): array {
+        try{
+            $sql = 'SELECT *
+                FROM Messages
+                WHERE conversation_id = :conversation_id
+                ORDER BY sent_at DESC
+                LIMIT 1';
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':conversation_id', $conversation_id, PDO::PARAM_INT);
+            $stmt->execute();
+            $message = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $message ?: [];
+        }catch(\PDOException $e){
+            return ['Error' => $e];
         }
     }
 }
