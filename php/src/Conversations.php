@@ -91,4 +91,24 @@ final class Conversations {
             return Utils::dbReturn(true, $e->getMessage());
         }
     }
+
+    public function getConversationsAndLastMessagesFromUserId(int $user_id):array{
+        try{
+            $sql = 'SELECT c.id AS conversation_id, c.name AS conversation_name, c.main_user_id, c.recipient_id,
+                m.id AS message_id, m.sender_id, m.conversation_id AS message_conversation_id, m.content AS message_content, m.sent_at AS message_sent_at
+                FROM Conversations c
+                LEFT JOIN Messages m ON c.id = m.conversation_id
+                WHERE (c.main_user_id = ? OR c.recipient_id = ?)
+                AND m.sent_at = (
+                    SELECT MAX(sent_at)
+                    FROM Messages
+                    WHERE conversation_id = c.id
+                )';
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([$user_id, $user_id]);
+            return Utils::dbReturn(false, $stmt->fetchAll(PDO::FETCH_ASSOC));
+        }catch(\PDOException $e){
+            return Utils::dbReturn(true, $e->getMessage());
+        }
+    }
 }

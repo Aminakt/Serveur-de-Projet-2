@@ -201,7 +201,7 @@ switch(true){
 
     case $method == 'GET' && preg_match('#^/users/(?P<user_id>\d+)/conversations$#', $path, $m):
         $user_id = (int)$m['user_id'];
-        $res = $conversations_db->getAllConversationsFromUserId($user_id);
+        $res = $conversations_db->getConversationsAndLastMessagesFromUserId($user_id);
         if($res['error']){
             httpFail(400,$res['data']);
         }
