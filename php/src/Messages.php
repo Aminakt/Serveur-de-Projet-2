@@ -30,7 +30,7 @@ final class Messages {
         $stmt->bindValue(':convId', $convId, PDO::PARAM_INT);
         $stmt->execute();
         $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        return $messages;
+        return $messages ?? [];
     }
 
     /**

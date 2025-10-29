@@ -79,10 +79,7 @@ switch(true){
     case $method == 'GET'&& preg_match('#^/conversations/(?P<convId>\d+)/messages$#', $path, $m):
         $convId = (int)$m['convId'];
         $messages = $messages_db->getMessageByConversationId($convId);
-        if(!$messages){
-            httpFail(404, "Conversation $convId doesn't exist");
-        }
-        httpOk(200, $messages);
+        httpOk(200, $messages ?? []);
     
     // ON RECUPERE UN MESSAGE PAR SON ID
     case $method == "GET"&& preg_match("#^/messages/(?P<id>\d+)#", $path, $m):
