@@ -174,7 +174,7 @@ switch(true){
         httpOk(204);
 
     // DELETE MESSAGES BY ID
-    case $method == 'DELETE'&& preg_match('#^/messages/(?P<msg_id>\d+)/$#', $path, $m):
+    case $method == 'DELETE'&& preg_match('#^/messages/(?P<msg_id>\d+)$#', $path, $m):
         $msg_id = (int)$m['msg_id'];
         $res = $messages_db->deleteMessageById($msg_id);
         if(!$res){httpFail(400, 'DB DELETE failed');}
