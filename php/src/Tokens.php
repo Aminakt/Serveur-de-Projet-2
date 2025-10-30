@@ -51,4 +51,11 @@ final class Tokens {
         $sql = "UPDATE Refresh_token SET revoked_at = CURRENT_TIMESTAMP(3) WHERE token_hash = ?";
         $this->pdo->prepare($sql)->execute([$hash]);
     }
+
+    public function rotate(int $userId, string $oldHashBin, string $newHashBin, \DateTimeImmutable $exp): void {
+        $this->pdo->beginTransaction();
+        $this->revokeByHash($oldHashBin);
+        $this->storeRefresh($userId, $newHashBin, $exp);
+        $this->pdo->commit();
+    }
 }

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Firebase\JWT\Key;
 use Php\Src\Authentification;
 use Php\Src\Connection;
 use Php\Src\Conversations;
@@ -15,7 +16,7 @@ require __DIR__ ."/../vendor/autoload.php";
 $users_id = ['admin'=>1, 'user1'=>2,'user2'=> 3];
 
 $users_db = new Users(Connection::connect());
-$auth = new Authentification();    
+$auth = new Authentification(Connection::connect());    
 $conversations_db = new Conversations(Connection::connect());
 $messages_db = new Messages(Connection::connect());
 
@@ -34,6 +35,27 @@ function httpFail(int $httpCode, string $error): never{
     http_response_code($httpCode);
     echo json_encode(['error'=> $error]);
     exit;
+}
+
+function requireAuthMW():int{
+    $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    if(!str_starts_with($authHeader, 'Bearer ')){
+        httpFail(401, 'Missing or invalid Authorization header');
+    }
+    $token = substr($authHeader, 7);
+    try{
+        $decoded = \Firebase\JWT\JWT::decode($token,  new Key($_ENV['JWT_KEY'], 'HS256'));
+    }catch(\Throwable $e){
+        httpFail(401, 'Invalid token: '.$e->getMessage());
+    }
+    if(($decoded->iss ?? null) !== $_ENV['JWT_ISS'] || ($decoded->aud ?? null) !== $_ENV['JWT_AUD']){
+        httpFail(401, 'Invalid token: invalid iss or aud');
+    }
+    $sub = (int)($decoded->sub ?? 0);
+    if($sub <= 0){
+        httpFail(401, 'Invalid token: missing sub');
+    }
+    return $sub;
 }
 
 switch(true){
@@ -210,6 +232,19 @@ switch(true){
             httpFail(400,$res['data']);
         }
         httpOk(200, $res['data']);
+    
+    case $method == 'POST' && $path == '/token/refresh':
+        $rtC = $_POST['rt'] ?? '';
+        if(empty($rtC)){
+            httpFail(400, 'Missing rt');
+        }
+        $res = $auth->refresh($rtC);
+        if($res['error']){
+            httpFail(401, $res['reason']);
+        }
+        httpOk(200, $res['data']);
+
+    case $method == 'POST'&& $path == '/logout':
 
     default:
         http_response_code(404);
