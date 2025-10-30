@@ -118,16 +118,23 @@ switch(true){
         httpOk(201, $res);
         
     // ON CREE UNE CONVERSATION -si conversation-
-    case $method == "POST"&& $path == '/conversations':
-        $main_user_id = (int)$_POST['user_id'] ?? "";
-        $recipient_id = (int)$_POST['recipient_id'] ?? "";
-        $name = (string)$_POST['name'] ?? "";
-        if(empty($recipient_id) || empty($name) || empty($main_user_id)){httpFail(400, "Invalid POST request");}
-        $res = $conversations_db->addConversation($main_user_id, $recipient_id, $name);
-        if(!$res){
-            httpFail(500, "Oops, la DB a pas aimé");
+    case $method === "POST" && $path === '/conversations':
+        $main_user_id = isset($_POST['user_id']) ? (int) $_POST['user_id'] : 0;
+        $recipient_id = isset($_POST['recipient_id']) ? (int) $_POST['recipient_id'] : 0;
+        $name = isset($_POST['name']) ? (string) $_POST['name'] : '';
+
+        if ($main_user_id === $recipient_id) {
+            httpFail(400, "Les deux utilisateurs doivent être différents");
         }
-        httpOk(201, $res);
+        try {
+            $res = $conversations_db->ensureConversation($main_user_id, $recipient_id, $name);
+            if(!$res){
+                httpFail(500, "Oops, la DB a pas aimé");
+            }
+            httpOk(201, ['conversation_id' => $res['conversation_id'], 'created' => true]);
+        }catch(Exception $e){
+            httpFail(500, $e->getMessage());
+        }
 
     // ON UPDATE UN MESSAGE AVEC SON ID
     case $method == "PATCH" && preg_match("#^/messages/(?P<msg_id>\d+)$#", $path, $m):

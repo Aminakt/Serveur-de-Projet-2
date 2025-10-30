@@ -132,4 +132,37 @@ final class Conversations {
             return Utils::dbReturn(true, $e->getMessage());
         }
     }
+
+    public function ensureConversation(int $a, int $b, string $name): array {
+
+        // CHECK : EXISTANT ?
+        $sql = "SELECT id
+                FROM Conversations
+                WHERE (main_user_id = ? AND recipient_id = ?)
+                   OR (main_user_id = ? AND recipient_id = ?)
+                LIMIT 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$a, $b, $b, $a]);
+        $existing = $stmt->fetchColumn();
+
+        if ($existing) {
+            return ['conversation_id' => (int)$existing, 'created' => false];
+        }
+
+        // CREATION
+        if ($name === '') {
+            $name = "Conv entre {$a} et {$b}";
+        }
+        $ins = $this->pdo->prepare(
+            "INSERT INTO Conversations (name, main_user_id, recipient_id)
+             VALUES (:name, :a, :b)"
+        );
+        $ok = $ins->execute([':name' => $name, ':a' => $a, ':b' => $b]);
+        if (!$ok) {
+            throw new \RuntimeException('DB insert failed');
+        }
+        $id = (int)$this->pdo->lastInsertId();
+
+        return ['conversation_id' => $id, 'created' => true];
+    }
 }
