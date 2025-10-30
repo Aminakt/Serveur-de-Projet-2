@@ -3,6 +3,7 @@
 declare(strict_types=1);
 namespace Php\Src;
 
+use DateTimeImmutable;
 use PDO;
 use Php\Src\Utils;
 
@@ -23,14 +24,31 @@ final class Tokens {
         return Utils::dbReturn(false, $res);
     }
 
-    function storeRefresh($RT, $conf):array{
-        $sql = 'INSERT INTO Refresh_token (token_hash, user_id, created_at, expires_at) VALUES (:token_hash, :user_id, :created_at, :expires_at)';
+    function storeRefresh(int $userid, string $hash, DateTimeImmutable $exp):void{
+        $sql = 'INSERT INTO Refresh_token (token_hash, user_id, created_at, expires_at) VALUES (?,?,?)';
         $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':token_hash', $RT, PDO::PARAM_STR);
-        $stmt->bindValue(':user_id', $conf['sub'], PDO::PARAM_INT);
-        $stmt->bindValue(':created_at', $conf['iat'], PDO::PARAM_INT);
-        $stmt->bindValue(':expires_at', $conf['exp'], PDO::PARAM_INT);
-        $stmt->execute();
-        return Utils::dbReturn(false, null);
+        $stmt->execute([$userid, $hash, $exp->format('Y-m-d H:i:s')]);
+    }
+
+    public function getActiveRT(string $hash): ?array {
+        $sql = "SELECT user_id, expires_at, revoked_at FROM Refresh_token
+                WHERE token_hash = ? LIMIT 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$hash]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) return null;
+        if ($row['revoked_at'] !== null) return null;
+        if (new DateTimeImmutable($row['expires_at']) <= Utils::now()) return null;
+        return $row;
+    }
+
+    public function touchLastUsed(string $hash): void {
+        $sql = "UPDATE Refresh_token SET last_used_at = CURRENT_TIMESTAMP(3) WHERE token_hash = ?";
+        $this->pdo->prepare($sql)->execute([$hash]);
+    }
+
+    public function revokeByHash(string $hash): void {
+        $sql = "UPDATE Refresh_token SET revoked_at = CURRENT_TIMESTAMP(3) WHERE token_hash = ?";
+        $this->pdo->prepare($sql)->execute([$hash]);
     }
 }
