@@ -25,7 +25,7 @@ final class Tokens {
     }
 
     function storeRefresh(int $userid, string $hash, DateTimeImmutable $exp):void{
-        $sql = 'INSERT INTO Refresh_token (token_hash, user_id, created_at, expires_at) VALUES (?,?,?)';
+        $sql = 'INSERT INTO Refresh_token (user_id, token_hash, expires_at) VALUES (?,?,?)';
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$userid, $hash, $exp->format('Y-m-d H:i:s')]);
     }
